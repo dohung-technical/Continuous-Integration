@@ -1,11 +1,11 @@
-name: Run test
+name: Run tests (Unit + Firebase UI)
 
 on:
   pull_request:
     branches: [main]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,14 +24,32 @@ jobs:
       - name: Grant execute permissions for gradlew
         run: chmod +x gradlew
 
-      - name: Build project
-        run: ./gradlew clean assembleDebug assembleAndroidTest
+      # Run unit tests locally
+      - name: Run unit tests
+        run: ./gradlew clean testDebug
 
-      - name: Start Android Emulator
-        uses: reactivecircus/android-emulator-runner@v2
+      # Build app and test APKs for Firebase Test Lab
+      - name: Build APKs
+        run: ./gradlew assembleDebug assembleAndroidTest
+
+      # Authenticate with Firebase using a service account
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          api-level: 33
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          script: ./gradlew connectedDebugAndroidTest
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      # Install gcloud CLI
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # Run instrumented tests on Firebase Test Lab
+      - name: Run UI tests on Firebase Test Lab
+        run: |
+          gcloud firebase test android run \
+            --type instrumentation \
+            --app app/build/outputs/apk/debug/app-debug.apk \
+            --test app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+            --device model=Pixel6,version=33,locale=en,orientation=portrait \
+            --timeout 10m
