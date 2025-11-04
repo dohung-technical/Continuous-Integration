@@ -1,0 +1,8 @@
+CICD - Setup
+
+Keystore Password: @ndroidiD3v$
+
+Key alias: android-devs
+Key pass: @ndroidiD3v$
+
+base64 -i android-devs-keystore -o the_keystore.txt
