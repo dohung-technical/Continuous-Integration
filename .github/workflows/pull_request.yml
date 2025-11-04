@@ -18,8 +18,20 @@ jobs:
           java-version: 17
           cache: 'gradle'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Grant execute permissions for gradlew
         run: chmod +x gradlew
 
-      - name: Run unit tests
-        run: ./gradlew clean testDebug
+      - name: Build project
+        run: ./gradlew clean assembleDebug assembleAndroidTest
+
+      - name: Start Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          script: ./gradlew connectedDebugAndroidTest
